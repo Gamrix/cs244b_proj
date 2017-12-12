@@ -131,8 +131,7 @@ class Node(object):
                 if (self.append_info == None) or (not self.validate_sig(proof, json.dumps(self.append_info))):
                     logging.warning("Append Proof {} is invalid".format(proof))
                     return
-
-            # TODO: Process the commit and send it back to the client
+            apply_transactions(data)
 
         # Process PreAppend info
         # Check PreAppend sigs included
