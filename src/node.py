@@ -123,10 +123,17 @@ class Node(object):
 
     def apply_transactions(self, transactions):
         # apply the data
-        for m in transactions:
+        for m, c_queue in transactions:
             if "print" in m:
                 v = self.kv_store[m["print"]]
                 print("Node {} replies {} to client".format(self.node_num, v))
+                
             else:
+                v = ""
                 self.kv_store.update(m)
+            message = [Messages.RETURN_TO_CLIENT, v]
+            self_sign = self.sign_message(json.dumps(message))
+            message.append(self_sign)
+            c_queue.push(json.dumps(message))
+
         self.commits.append(commit)
