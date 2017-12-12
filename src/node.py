@@ -21,6 +21,14 @@ class Node(object):
         self.private_sig = private_sig
         self.pub_sigs = pub_sigs
         self.queues = queues  # Queue is where the messages are simulated to be sent to
+        self.kv_store = {}
+
+        self.cur_leader_term = 0
+        self.cur_leader_num = 0
+        self.pre_append_log_index = 0
+
+        self.append_log_index = 0
+        self.append_info = None
      
     def check_messages(self):
         """
