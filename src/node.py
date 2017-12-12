@@ -34,10 +34,11 @@ class Node(object):
 
         self.append_log_index = 0
         self.append_info = None
-    
+
     def validate_sig(self, sig_info: SigInfo, data:str):
-        pass
-     
+        public_key = self.pub_keys[sig_info.node_num]
+        return (public_key.verify(data, sig_info.sig))
+
     def check_messages(self):
         """
         Process the next message and send message when needed
