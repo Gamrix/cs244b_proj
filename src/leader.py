@@ -39,7 +39,8 @@ class Leader(node.Node):
             # we are now safe to add a new message
             self.pre_append_log_index += 1
 
-            pre_app_hash = self.hash_obj(self.message_queue)
+            self.append_message = self.message_queue[:MAX_TX_PER_ENTRY]
+            pre_app_hash = self.hash_obj(self.append_message)
 
             message = [Messages.PRE_APPEND, self.cur_leader_term, self.pre_append_log_index, pre_app_hash]
             self_sign = self.sign_message(json.dumps(message))
@@ -47,7 +48,6 @@ class Leader(node.Node):
             self.pre_app_sigs = {self_sign}
 
             self.pre_append_info = message[:-1]
-            self.append_message = self.message_queue[:MAX_TX_PER_ENTRY]
             self.message_queue = self.message_queue[MAX_TX_PER_ENTRY:]
             self.broadcast(json.dumps(message))
 
