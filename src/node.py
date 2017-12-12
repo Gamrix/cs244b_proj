@@ -1,6 +1,11 @@
 from enum import IntEnum
 from collections import namedtuple
 import json
+import logging
+
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
+from Crypto import Random
 
 class Messages(IntEnum):
     CLIENT_MESSAGE = 1
@@ -51,9 +56,10 @@ class Node(object):
         return (public_key.verify(data, sig_info.sig))
 
     def sign_message(self, data:str):
-        return SigInfo(key.sign(data, ''), self.node_num)
+        return SigInfo(self.private_key.sign(data, ''), self.node_num)
 
     def send_to_leader(self, message: str):
+        logging.debug("Node {} sent to leader: {}".format(self.node_num, str))
         self.queues[self.cur_leader_num].put(message)
 
     def check_messages(self):
@@ -61,7 +67,7 @@ class Node(object):
         Process the next message and send message when needed
         """
         while True:
-            message = json.loads(self.queues[self.node_num].pop())
+            message = json.loads(self.queues[self.node_num].get())
             if message[0] == Messages.PRE_APPEND:
                 self.pre_append(message)
             if message[0] == Messages.APPEND_ENTRIES:
@@ -73,7 +79,7 @@ class Node(object):
         _, term, log_index, hashval, sig = pre_append_message
 
         # Check sig from leader
-        if not validate_sig(sig, json.dumps(pre_append_message[:-1])):
+        if not self.validate_sig(sig, json.dumps(pre_append_message[:-1])):
             return
 
         # Update term
@@ -103,26 +109,39 @@ class Node(object):
 
         # Process append_proof
         # Check Append sigs included
-        for proof in append_proofs:
-            if (self.append_info == None) or (not validate_sig(proof, json.dumps(self.append_info))):
-                return
+        if len(append_proofs) != 0:
+            for proof in append_proofs:
+                if (self.append_info == None) or (not self.validate_sig(proof, json.dumps(self.append_info))):
+                    logging.warning("Append Proof {} is invalid".format(proof))
+                    return
+
+            # TODO: Process the commit and send it back to the client
 
         # Process PreAppend info
         # Check PreAppend sigs included
-        for proof in pre_append_proofs:
-            if not validate_sig(proof, json.dumps(self.pre_append_info)):
-                return
-
-        # Check data hash sent in by PreAppend
-        if SHA256.new(json.dumps(data)).digest() != self.pre_append_hash:
+        if len(pre_append_proofs) == 0:
+            # logging.debug("No PreAppends to process")
             return
 
-        # Check previous commit hash
-        if self.prev_commit_hash != prev_commit_hash:
+        for proof in pre_append_proofs:
+            if not self.validate_sig(proof, json.dumps(self.pre_append_info)):
+                logging.warning("Pre Append Proof {} is invalid".format(proof))
+                return
+
+        if SHA256.new(json.dumps(data)).digest() != self.pre_append_hash:
+            logging.warning("Transaction hash is invalid")
+            return
+
+        # TODO: Check that the append number is correct
+
+        commit_str = json.dumps(self.commits[-1])
+        commit_hash = SHA256.new(commit_str).digest()
+        if commit_hash != prev_commit_hash:
+            logging.warning("Transactions out of order")
             return
 
         # Record down append_info
-        self.append_info = [Messages.APPEND_ENTRIES, *self.preappend_info[1:4], prev_commit_hash]
+        self.append_info = [Messages.APPEND_ENTRIES, *self.pre_append_info[1:4], prev_commit_hash]
 
         # Generate, sign, and send ack
         ack_message = [ Messages.APPEND_ACK ]
@@ -130,12 +149,13 @@ class Node(object):
         ack_message.append(self_sign)
         self.send_to_leader(json.dumps(ack_message))
 
-    def apply_transactions(self, transactions):
+    def apply_transactions(self, commit):
         # apply the data
-        for m, c_queue in transactions:
+        transactions = commit[0]
+        for m, c_num in transactions:
             if "print" in m:
                 v = self.kv_store[m["print"]]
-                print("Node {} replies {} to client".format(self.node_num, v))
+                logging.info("Node {} replies {} to client".format(self.node_num, v))
 
             else:
                 v = ""
@@ -143,6 +163,6 @@ class Node(object):
             message = [Messages.RETURN_TO_CLIENT, v]
             self_sign = self.sign_message(json.dumps(message))
             message.append(self_sign)
-            c_queue.push(json.dumps(message))
+            self.queues[c_num].put(json.dumps(message))
 
         self.commits.append(commit)

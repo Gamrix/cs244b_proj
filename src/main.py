@@ -1,5 +1,6 @@
 from multiprocessing import Process, Queue
 import json
+import logging
 
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
@@ -9,6 +10,7 @@ import node
 import leader
 
 def main():
+    logging.basicConfig(level=logging.DEBUG)
     num_nodes = 7
 
     # generate keys 
@@ -17,17 +19,20 @@ def main():
     public_keys = [k.publickey() for k in private_keys]
 
     # generate queues
-    queues = [Queue() for i in range(num_nodes)]
-    client_queue = Queue()
+    queues = [Queue() for i in range(num_nodes + 1)]
+    client_num = num_nodes
+    client_queue = queues[client_num]
 
     # start up the nodes
     p = Process(target=leader.build_leader, args=(client_queue, public_keys, private_keys[0], 0, queues))
+    p.start()
 
     for i in range(1, num_nodes):
         p = Process(target=node.build_node, args=(public_keys,private_keys[i], i, queues))
+        p.start()
     
-    queues[0].put(json.dumps([node.Messages.CLIENT_MESSAGE, {"test": "Hi John"}]))
-    queues[0].put(json.dumps([node.Messages.CLIENT_MESSAGE, {"print": "test"}]))
+    queues[0].put(json.dumps([node.Messages.CLIENT_MESSAGE, {"test": "Hi John"}, client_num]))
+    queues[0].put(json.dumps([node.Messages.CLIENT_MESSAGE, {"print": "test"}, client_num]))
 
     while True:
         print(json.loads(client_queue.get()))

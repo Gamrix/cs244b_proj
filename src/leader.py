@@ -1,4 +1,5 @@
 import json
+import logging
 
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
@@ -13,7 +14,7 @@ def build_leader(*args, **kwargs):
 
 class Leader(node.Node):
 
-    def __init__(self, client_queue, *args,  **kwargs):
+    def __init__(self, *args,  **kwargs):
         super(Leader, self).__init__(*args, **kwargs)
         self.message_queue = []
 
@@ -29,8 +30,8 @@ class Leader(node.Node):
                 continue
             q.put(message)
 
-    def send_new_message(self, tx: dict,): # client_queue:Queue):
-        self.message_queue.append([tx, self.client_queue])
+    def send_new_message(self, message): # client_queue:Queue):
+        self.message_queue.append(message[1:])
         if self.append_log_index == self.pre_append_log_index:
             # we are now safe to add a new message
             self.pre_append_log_index += 1
@@ -50,13 +51,13 @@ class Leader(node.Node):
 
     def check_messages(self):
         while True:
-            message = json.loads(self.queues[self.node_num].pop())
+            message = json.loads(self.queues[self.node_num].get())
             if message[0] == Messages.PRE_APPEND_ACK:
                 self.process_pre_app_ack(message)
             if message[0] == Messages.APPEND_ACK:
                 self.process_app_ack(message)
             if message[0] == Messages.CLIENT_MESSAGE:
-                self.send_new_message(message[1])
+                self.send_new_message(message)
 
 
     def process_pre_app_ack(self, message):
@@ -87,7 +88,7 @@ class Leader(node.Node):
             self.append_sigs = set()
 
             commit = [self.c_messages, append_proof, self.append_info]
-            self.apply_transactions(self.c_messages)
+            self.apply_transactions(commit)
 
         else:
             append_proof = []
@@ -102,7 +103,7 @@ class Leader(node.Node):
             commit_hash = SHA256.new(commit_str).digest()
             # now move the preappend data to the append phase
             # commit proof needs items the proof is signing: [APPEND_ENTRY,  term, log_number, d_hash, prev_commit_hash]
-            self.append_info = [Messages.APPEND_ENTRY, *self.preappend_info[1:4], prev_commit_hash]
+            self.append_info = [Messages.APPEND_ENTRY, *self.preappend_info[1:4], commit_hash]
             self.append_sigs = {self.sign_message(json.dumps(self.append_info))}
             self.c_messages = append_message
             self.append_log_index += 1
