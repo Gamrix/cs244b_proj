@@ -104,11 +104,13 @@ class Node(object):
             if !validate_sig(proof, self.pre_append_info):
                 return
 
+        # Check data hash sent in by PreAppend
+        if SHA256.new(json.dumps(data)).digest() != self.pre_append_hash:
+            return
+
         # Check previous commit hash
         if self.prev_commit_hash != prev_commit_hash
             return
-
-        # TODO apply data
 
         # Record down append_info
         self.append_info = [Messages.APPEND_ENTRIES, *self.preappend_info[1:4], prev_commit_hash]
@@ -118,7 +120,7 @@ class Node(object):
         self_sign = self.sign_message(json.dumps(self.append_info))
         ack_message.append(self_sign)
         self.send_to_leader(json.dumps(ack_message))
-    
+
     def apply_transactions(self, transactions):
         # apply the data
         for m, c_queue in transactions:
