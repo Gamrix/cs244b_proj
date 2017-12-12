@@ -76,10 +76,43 @@ class Node(object):
             # Log pre_app_hash
             self.pre_append_hash = hashval
 
+            # Record down pre_append_info
+            self.pre_append_info = pre_append_message[:-1]
+
             # Generate, sign, and send ack
             ack_message = [ Messages.PRE_APPEND_ACK ]
             self_sign = self.sign_message(json.dumps(pre_append_message[:-1]))
             ack_message.append(self_sign)
-
-            self.pre_append_info = pre_append_message
             self.send_to_leader(json.dumps(ack_message))
+
+    # Follower: Handle AppendEntriesRequest message from leader
+    def append_entries(self, append_message):
+        #[Messages.APPEND_ENTRIES, pre_append_proof (list of sigs), data, prev_commit_hash, append_proof (list of sigs)]
+        _, pre_append_proofs, data, prev_commit_hash, append_proofs = append_message
+
+        # Process append_proof
+        # Check Append sigs included
+        for proof in append_proofs:
+            if (self.append_info == None) || (!validate_sig(proof, self.append_info)):
+                return
+
+        # Process PreAppend info
+        # Check PreAppend sigs included
+        for proof in pre_append_proofs:
+            if !validate_sig(proof, self.pre_append_info):
+                return
+
+        # Check previous commit hash
+        if self.prev_commit_hash != prev_commit_hash
+            return
+
+        # TODO apply data
+
+        # Record down append_info
+        self.append_info = [Messages.APPEND_ENTRIES, *self.preappend_info[1:4], prev_commit_hash]
+
+        # Generate, sign, and send ack
+        ack_message = [ Messages.APPEND_ACK ]
+        self_sign = self.sign_message(json.dumps(self.append_info))
+        ack_message.append(self_sign)
+        self.send_to_leader(json.dumps(ack_message))
