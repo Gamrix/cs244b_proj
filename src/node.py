@@ -136,7 +136,7 @@ class Node(object):
                 if (self.append_info == None) or (not self.validate_sig(proof, json.dumps(self.append_info))):
                     logging.warning("Append Proof {} is invalid".format(proof))
                     return
-            self.apply_transactions(data)
+            self.apply_transactions(self.c_messages)
 
         # Process PreAppend info
         # Check PreAppend sigs included
@@ -166,6 +166,9 @@ class Node(object):
 
         # Record down append_info
         self.append_info = [Messages.APPEND_ENTRIES, *self.pre_append_info[1:4], prev_commit_hash]
+
+        # Record down data
+        self.c_messages = data
 
         # Generate, sign, and send ack
         ack_message = [ Messages.APPEND_ACK ]
