@@ -39,6 +39,8 @@ class Node(object):
         public_key = self.pub_keys[sig_info.node_num]
         return (public_key.verify(data, sig_info.sig))
 
+    def sign_message(self, data:str):
+
     def check_messages(self):
         """
         Process the next message and send message when needed
