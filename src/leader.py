@@ -78,11 +78,3 @@ class Leader(node.Node):
             append_message = ""
 
 
-
-
-
-
-
-
-
-

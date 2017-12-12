@@ -83,3 +83,4 @@ class Node(object):
 
             self.pre_append_info = pre_append_message
             self.send_to_leader(json.dumps(ack_message))
+
