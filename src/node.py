@@ -64,7 +64,7 @@ class Node(object):
         _, term, log_index, hashval, sig = pre_append_message
 
         # Check sig from leader
-        if !validate_sig(sig, json.dumps(pre_append_message[:-1])):
+        if not validate_sig(sig, json.dumps(pre_append_message[:-1])):
             return
 
         # Update term
@@ -95,13 +95,13 @@ class Node(object):
         # Process append_proof
         # Check Append sigs included
         for proof in append_proofs:
-            if (self.append_info == None) || (!validate_sig(proof, json.dumps(self.append_info))):
+            if (self.append_info == None) or (not validate_sig(proof, json.dumps(self.append_info))):
                 return
 
         # Process PreAppend info
         # Check PreAppend sigs included
         for proof in pre_append_proofs:
-            if !validate_sig(proof, json.dumps(self.pre_append_info)):
+            if not validate_sig(proof, json.dumps(self.pre_append_info)):
                 return
 
         # Check data hash sent in by PreAppend
@@ -127,7 +127,7 @@ class Node(object):
             if "print" in m:
                 v = self.kv_store[m["print"]]
                 print("Node {} replies {} to client".format(self.node_num, v))
-                
+
             else:
                 v = ""
                 self.kv_store.update(m)
