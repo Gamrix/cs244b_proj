@@ -1,4 +1,5 @@
 from enum import IntEnum
+import json
 
 class Messages(IntEnum):
     CLIENT_MESSAGE = 1
@@ -7,6 +8,9 @@ class Messages(IntEnum):
     APPEND_ENTRIES = 4
     APPEND_ACK = 5
     RETURN_TO_CLIENT = 6
+
+    CATCHUP = 100
+    CATCHUP_RESP = 101
 
 
 
