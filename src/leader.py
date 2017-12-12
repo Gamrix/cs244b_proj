@@ -7,10 +7,13 @@ from Crypto import Random
 import node
 from node import Messages
 
+def build_leader(*args, **kwargs):
+    node = Leader(*args, **kwargs)
+    node.check_messages()
 
 class Leader(node.Node):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, client_queue, *args,  **kwargs):
         super(Leader, self).__init__(*args, **kwargs)
         self.message_queue = []
 
@@ -26,8 +29,8 @@ class Leader(node.Node):
                 continue
             q.put(message)
 
-    def send_new_message(self, tx: dict, client_queue:Queue):
-        self.message_queue.append([tx, client_queue])
+    def send_new_message(self, tx: dict,): # client_queue:Queue):
+        self.message_queue.append([tx, self.client_queue])
         if self.append_log_index == self.pre_append_log_index:
             # we are now safe to add a new message
             self.pre_append_log_index += 1
@@ -52,6 +55,8 @@ class Leader(node.Node):
                 self.process_pre_app_ack(message)
             if message[0] == Messages.APPEND_ACK:
                 self.process_app_ack(message)
+            if message[0] == Messages.CLIENT_MESSAGE:
+                self.send_new_message(message[1])
 
 
     def process_pre_app_ack(self, message):

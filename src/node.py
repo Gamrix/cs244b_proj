@@ -15,6 +15,10 @@ class Messages(IntEnum):
 
 SigInfo = namedtuple('SigInfo', ['sig', 'node_num'])
 
+def build_node(*args, **kwargs):
+    node = Node(*args, **kwargs)
+    node.check_messages()
+
 class Node(object):
 
     def __init__(self, pub_keys, private_key, node_num, queues):
@@ -55,8 +59,12 @@ class Node(object):
         """
         Process the next message and send message when needed
         """
-
-        pass
+        while True:
+            message = json.loads(self.queues[self.node_num].pop())
+            if message[0] == Messages.PRE_APPEND:
+                self.pre_append(message)
+            if message[0] == Messages.APPEND_ENTRIES:
+                self.append_entries(message)
 
     # Follower: Handle PreAppendRequest message from leader
     def pre_append(self, pre_append_message):
