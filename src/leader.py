@@ -21,10 +21,11 @@ class Leader(node.Node):
         self.append_sigs = set()
 
     def broadcast(self, message:str):
-        for i, q in enumerate(self.queues):
+        for i in range(self.num_nodes):
             if i == self.node_num:
                 # don't send to self
                 continue
+            q = self.queues[i]
             q.put(message)
 
     def send_new_message(self, message): # client_queue:Queue):

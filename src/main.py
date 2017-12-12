@@ -11,7 +11,7 @@ import node
 import leader
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    # logging.basicConfig(level=logging.DEBUG)
     num_nodes = 7
 
     # generate keys 
@@ -25,11 +25,11 @@ def main():
     client_queue = queues[client_num]
 
     # start up the nodes
-    p = Process(target=leader.build_leader, args=(public_keys, private_keys[0], 0, queues))
+    p = Process(target=leader.build_leader, args=(public_keys, private_keys[0], 0, queues, num_nodes))
     p.start()
 
     for i in range(1, num_nodes):
-        p = Process(target=node.build_node, args=(public_keys,private_keys[i], i, queues))
+        p = Process(target=node.build_node, args=(public_keys,private_keys[i], i, queues, num_nodes))
         p.start()
     
     queues[0].put(json.dumps([node.Messages.CLIENT_MESSAGE, {"test": "Hi John"}, client_num]))

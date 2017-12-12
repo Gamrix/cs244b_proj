@@ -3,6 +3,7 @@ from collections import namedtuple
 import json
 import logging
 import base64
+import time
 
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
@@ -22,17 +23,19 @@ class Messages(IntEnum):
 
 SigInfo = namedtuple('SigInfo', ['sig', 'node_num'])
 
-def build_node(*args, **kwargs):
-    node = Node(*args, **kwargs)
+def build_node(pub_keys, private_key, node_num, *args, **kwargs):
+    logging.basicConfig(filename="logs/{}/node{}.log".format(), level=logging.DEBUG)
+    node = Node(pub_keys, private_key, node_num, *args, **kwargs)
     node.check_messages()
 
 class Node(object):
 
-    def __init__(self, pub_keys, private_key, node_num, queues):
+    def __init__(self, pub_keys, private_key, node_num, queues, num_nodes):
         self.node_num = node_num
         self.private_key = private_key
         self.pub_keys = pub_keys
         self.queues = queues  # Queue is where the messages are simulated to be sent to
+        self.num_nodes = num_nodes
         self.kv_store = {}
 
         self.cur_leader_term = 0
@@ -50,16 +53,20 @@ class Node(object):
 
         self.commits = [""]  # begin with a dummy commit
 
-        self.quorum = (len(pub_keys) - 1) // 3 * 2 + 1  # 2f + 1
+        self.quorum = (num_nodes - 1) // 3 * 2 + 1  # 2f + 1
 
     def validate_sig(self, sig_info: SigInfo, data:str):
+        sig_info = SigInfo(*sig_info) # turn list back into siginfo
         public_key = self.pub_keys[sig_info.node_num]
-        sig = base64.decodebytes(sig_info.sig)
-        return (public_key.verify(data.encode("utf-8"), sig))
+        # sig = base64.decodebytes(sig_info.sig.encode("ascii"))
+        sig = int(sig_info.sig)
+        return (public_key.verify(data.encode("utf-8"), (sig, None)))
 
     def sign_message(self, data:str):
-        sig_bytes = SigInfo(self.private_key.sign(data.encode("utf-8"), ''), self.node_num)
-        return base64.encodebytes(sig_bytes)
+        sig_bytes = self.private_key.sign(data.encode("utf-8"), '')[0]
+        # sig_str = base64.encodebytes(sig_bytes).decode("ascii")
+        sig_str = str(sig_bytes) # sig_bytes is int
+        return SigInfo(sig_str, self.node_num)
 
     def send_to_leader(self, message: str):
         logging.debug("Node {} sent to leader: {}".format(self.node_num, str))
@@ -69,7 +76,7 @@ class Node(object):
     def hash_obj(src_obj):
         transactions_str = json.dumps(src_obj)
         hash_bytes = SHA256.new(transactions_str.encode("utf-8")).digest()
-        return base64.encodebytes(hash_bytes)
+        return base64.encodebytes(hash_bytes).decode("ascii")
 
 
     def check_messages(self):
