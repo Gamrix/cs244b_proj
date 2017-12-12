@@ -128,11 +128,15 @@ class Node(object):
         # Process append_proof
         # Check Append sigs included
         if len(append_proofs) != 0:
+            if len(append_proofs) < self.quorum:
+                logging.warning("Not enough proofs were sent")
+                return
+
             for proof in append_proofs:
                 if (self.append_info == None) or (not self.validate_sig(proof, json.dumps(self.append_info))):
                     logging.warning("Append Proof {} is invalid".format(proof))
                     return
-            apply_transactions(data)
+            self.apply_transactions(data)
 
         # Process PreAppend info
         # Check PreAppend sigs included

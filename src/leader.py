@@ -117,4 +117,4 @@ class Leader(node.Node):
             append_message = ""
             commit_hash = ""
 
-        self.broadcast(json.dumps([Messages.APPEND_ENTRY, pre_app_proof, commit_hash, append_message, append_proof]))
+        self.broadcast(json.dumps([Messages.APPEND_ENTRIES, pre_app_proof, commit_hash, append_message, append_proof]))
