@@ -35,6 +35,7 @@ class Leader(node.Node):
 
     def send_pre_append(self): # client_queue:Queue):
         if self.append_log_index == self.pre_append_log_index:
+            MAX_TX_PER_ENTRY = 1000
             # we are now safe to add a new message
             self.pre_append_log_index += 1
 
@@ -46,8 +47,8 @@ class Leader(node.Node):
             self.pre_app_sigs = {self_sign}
 
             self.pre_append_info = message[:-1]
-            self.append_message = self.message_queue
-            self.message_queue = []
+            self.append_message = self.message_queue[:MAX_TX_PER_ENTRY]
+            self.message_queue = self.message_queue[MAX_TX_PER_ENTRY:]
             self.broadcast(json.dumps(message))
 
     def check_messages(self):

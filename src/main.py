@@ -49,10 +49,24 @@ def main():
     with prof_tools.time_func("Basic Test 2 tx"):
         run_transactions(transactions, queues[0], quorum , client_num, client_queue)
 
-    transactions = [[{"test{}".format(i): "Hi John"}, {"get": "test{}".format(i)}] for i in range(500)]
-    transactions = list(itertools.chain.from_iterable(transactions))
-    with prof_tools.time_func("Test 100 tx"):
-        run_transactions(transactions, queues[0], quorum , client_num, client_queue, quiet=True)
+    print("Benchmark tests")
+    with prof_tools.time_func("Test 1 tx"):
+        time.sleep(.1)
+        while not client_queue.empty(): # reset the queue
+            client_queue.get()
+        run_transactions(transactions[0], queues[0], quorum , client_num, client_queue, quiet=True)
+
+    for n in [6, 10, 50, 100, 500, 1000, 5000, 10000]:
+        time.sleep(.5)
+        while not client_queue.empty(): # reset the queue
+            client_queue.get()
+
+        transactions = [[{"test_{}_{}".format(n, i): "Hi John"},
+                         {"get": "test_{}_{}".format(n, i)}] for i in range(n // 2)]
+
+        transactions = list(itertools.chain.from_iterable(transactions))
+        with prof_tools.time_func("Test {} tx".format(n)):
+            run_transactions(transactions, queues[0], quorum , client_num, client_queue, quiet=True)
 
 def run_transactions(transactions, leader_queue, quorum , client_num, client_queue, quiet=False):
     trans_items = {node.Node.hash_obj(t): [] for t in transactions}
