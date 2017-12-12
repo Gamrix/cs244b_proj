@@ -73,15 +73,8 @@ class Leader(node.Node):
             self.append_sigs = set()
 
             commit = [self.c_messages, append_proof, self.append_info]
+            self.apply_transactions(self.c_messages)
 
-            # apply the data
-            for m in self.c_messages:
-                if "print" in m:
-                    v = self.kv_store[m["print"]]
-                    print("Node {} replies {} to client".format(self.node_num, v))
-                else:
-                    self.kv_store.update(m)
-            self.commits.append(commit)
         else:
             append_proof = []
         

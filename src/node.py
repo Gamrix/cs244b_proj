@@ -118,3 +118,13 @@ class Node(object):
         self_sign = self.sign_message(json.dumps(self.append_info))
         ack_message.append(self_sign)
         self.send_to_leader(json.dumps(ack_message))
+    
+    def apply_transactions(self, transactions):
+        # apply the data
+        for m in transactions:
+            if "print" in m:
+                v = self.kv_store[m["print"]]
+                print("Node {} replies {} to client".format(self.node_num, v))
+            else:
+                self.kv_store.update(m)
+        self.commits.append(commit)
