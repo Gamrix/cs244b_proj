@@ -30,9 +30,14 @@ class Node(object):
         self.pre_append_info = None
         self.pre_append_hash = None
 
+        # last seen index
+        self.pre_append_log_index = 0  
         self.append_log_index = 0
+
         self.append_info = None
         self.debug = False
+        
+        self.commits = [""]  # begin with a dummy commit
 
         self.quorum = (len(pub_keys) - 1) // 3 * 2 + 1  # 2f + 1
 
