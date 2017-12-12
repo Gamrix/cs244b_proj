@@ -1,12 +1,19 @@
 import json
 import logging
+import time
+import os
 
 
 import node
 from node import Messages
 
-def build_leader(*args, **kwargs):
-    node = Leader(*args, **kwargs)
+def build_leader(pub_keys, private_key, node_num, *args, **kwargs):
+    cur_time =  time.strftime("%m%d_%H%M")
+    os.makedirs("logs/{}/".format(cur_time))
+
+    logging.basicConfig(filename="logs/{}/node{}.log".format(cur_time, node_num), level=logging.DEBUG)
+    logging.info("Node is leader")
+    node = Leader(pub_keys, private_key, node_num, *args, **kwargs)
     node.check_messages()
 
 class Leader(node.Node):
@@ -21,6 +28,7 @@ class Leader(node.Node):
         self.append_sigs = set()
 
     def broadcast(self, message:str):
+        logging.debug("Broadcasted :" + message)
         for i in range(self.num_nodes):
             if i == self.node_num:
                 # don't send to self
@@ -58,23 +66,24 @@ class Leader(node.Node):
 
 
     def process_pre_app_ack(self, message):
-        leader_msg =  json.dumps(self.pre_append_info[:-1])
+        leader_msg =  json.dumps(self.pre_append_info)
         if self.validate_sig(message[-1], leader_msg):
-            self.pre_app_sigs.add(message[-1])
+            self.pre_app_sigs.add(node.SigInfo(*message[-1]))
             self.check_send_append()
 
     def process_app_ack(self, message):
         leader_msg =  json.dumps(self.append_info)
         if self.validate_sig(message[-1], leader_msg):
-            self.append_sigs.add(message[-1])
+            self.append_sigs.add(node.SigInfo(*message[-1]))
             self.check_send_append()
 
     def check_send_append(self):
         send = False
         if len(self.append_sigs) == self.quorum:
             send = True
-        elif len(self.pre_app_sigs) >= self.quorum and self.append_log_index == len(self.commits):
-            send = True
+        elif len(self.pre_app_sigs) >= self.quorum:
+            if self.append_log_index == len(self.commits) - 1:
+                send = True
         if not send:
             return
 
@@ -99,7 +108,7 @@ class Leader(node.Node):
             commit_hash = self.hash_obj(self.commits[-1])
             # now move the preappend data to the append phase
             # commit proof needs items the proof is signing: [APPEND_ENTRY,  term, log_number, d_hash, prev_commit_hash]
-            self.append_info = [Messages.APPEND_ENTRY, *self.preappend_info[1:4], commit_hash]
+            self.append_info = [Messages.APPEND_ENTRIES, *self.pre_append_info[1:4], commit_hash]
             self.append_sigs = {self.sign_message(json.dumps(self.append_info))}
             self.c_messages = append_message
             self.append_log_index += 1

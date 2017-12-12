@@ -24,7 +24,8 @@ class Messages(IntEnum):
 SigInfo = namedtuple('SigInfo', ['sig', 'node_num'])
 
 def build_node(pub_keys, private_key, node_num, *args, **kwargs):
-    logging.basicConfig(filename="logs/{}/node{}.log".format(), level=logging.DEBUG)
+    cur_time =  time.strftime("%m%d_%H%M")
+    logging.basicConfig(filename="logs/{}/node{}.log".format(cur_time, node_num), level=logging.DEBUG)
     node = Node(pub_keys, private_key, node_num, *args, **kwargs)
     node.check_messages()
 
@@ -69,7 +70,7 @@ class Node(object):
         return SigInfo(sig_str, self.node_num)
 
     def send_to_leader(self, message: str):
-        logging.debug("Node {} sent to leader: {}".format(self.node_num, str))
+        logging.debug("Node {} sent to leader: {}".format(self.node_num, message))
         self.queues[self.cur_leader_num].put(message)
 
     @staticmethod
