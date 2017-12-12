@@ -34,6 +34,9 @@ class Node(object):
 
         self.append_log_index = 0
         self.append_info = None
+        self.debug = False
+
+        self.quorum = (len(pub_keys) - 1) // 3 * 2 + 1  # 2f + 1
 
     def validate_sig(self, sig_info: SigInfo, data:str):
         public_key = self.pub_keys[sig_info.node_num]
