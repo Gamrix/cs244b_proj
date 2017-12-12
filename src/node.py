@@ -131,5 +131,9 @@ class Node(object):
             else:
                 v = ""
                 self.kv_store.update(m)
-            
+            message = [Messages.RETURN_TO_CLIENT, v]
+            self_sign = self.sign_message(json.dumps(message))
+            message.append(self_sign)
+            c_queue.push(json.dumps(message))
+
         self.commits.append(commit)
