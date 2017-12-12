@@ -44,7 +44,7 @@ class Leader(node.Node):
             self.append_message = self.message_queue
             self.message_queue = []
             self.broadcast(json.dumps(message))
-    
+
     def check_messages(self):
         while True:
             message = json.loads(self.queues[self.node_num].pop())
@@ -76,7 +76,7 @@ class Leader(node.Node):
             return
 
         if len(self.append_sigs) == self.quorum:
-            # committing needs: transactions, proof of commit, 
+            # committing needs: transactions, proof of commit,
             # need to craft the new commit
             append_proof = list(self.append_sigs)
             self.append_sigs = set()
@@ -86,14 +86,14 @@ class Leader(node.Node):
 
         else:
             append_proof = []
-        
+
         if len(self.pre_app_sigs) >= self.quorum:
             pre_app_proof = list(self.pre_app_sigs)
             self.pre_app_sigs = set()
             append_message = self.append_message  # transactions for append phase,
             self.append_message = None
 
-            commit_str = json.dumps(self.commits[-1])            
+            commit_str = json.dumps(self.commits[-1])
             commit_hash = SHA256.new(commit_str).digest()
             # now move the preappend data to the append phase
             # commit proof needs items the proof is signing: [APPEND_ENTRY,  term, log_number, d_hash, prev_commit_hash]
@@ -105,6 +105,5 @@ class Leader(node.Node):
             pre_app_proof= []
             append_message = ""
             commit_hash = ""
-        
-        self.broadcast(json.dumps([Messages.APPEND_ENTRY, pre_app_proof, commit_hash, append_message, append_proof]))
 
+        self.broadcast(json.dumps([Messages.APPEND_ENTRY, pre_app_proof, commit_hash, append_message, append_proof]))
