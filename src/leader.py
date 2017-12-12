@@ -40,7 +40,7 @@ class Leader(node.Node):
             message.append(self_sign)
             self.pre_app_sigs = {self_sign}
 
-            self.pre_append_info = message
+            self.pre_append_info = message{:-1}
             self.append_message = self.message_queue
             self.message_queue = []
             self.broadcast(json.dumps(message))
@@ -49,6 +49,12 @@ class Leader(node.Node):
         leader_msg =  json.dumps(self.pre_append_info[:-1])
         if self.validate_sig(message[-1], leader_msg):
             self.pre_app_sigs.add(message[-1])
+            self.check_send_append()
+
+    def process_app_ack(self, message):
+        leader_msg =  json.dumps(self.append_info)
+        if self.validate_sig(message[-1], leader_msg):
+            self.app_sigs.add(message[-1])
             self.check_send_append()
 
     def check_send_append(self):
@@ -61,19 +67,42 @@ class Leader(node.Node):
             return
 
         if len(self.append_sigs) == self.quorum:
+            # committing needs: transactions, proof of commit, 
             # need to craft the new commit
-            self.commit_messages()
-            self.commits.append(commit)
-        
-        if len(self.pre_app_sigs) >= self.quorum:
             append_proof = list(self.append_sigs)
             self.append_sigs = set()
-            append_message = self.append_message
+
+            commit = [self.c_messages, append_proof, self.append_info]
+
+            # apply the data
+            for m in self.c_messages:
+                if "print" in m:
+                    v = self.kv_store[m["print"]]
+                    print("Node {} replies {} to client".format(self.node_num, v))
+                else:
+                    self.kv_store.update(m)
+            self.commits.append(commit)
+        else:
+            append_proof = []
+        
+        if len(self.pre_app_sigs) >= self.quorum:
+            pre_app_proof = list(self.pre_app_sigs)
+            self.pre_app_sigs = set()
+            append_message = self.append_message  # transactions for append phase,
             self.append_message = None
 
             commit_str = json.dumps(self.commits[-1])            
             commit_hash = SHA256.new(commit_str).digest()
+            # now move the preappend data to the append phase
+            # commit proof needs items the proof is signing: [APPEND_ENTRY,  term, log_number, d_hash, prev_commit_hash]
+            self.append_info = [Messages.APPEND_ENTRY, *self.preappend_info[1:4], prev_commit_hash]
+            self.append_sigs = {self.sign_message(json.dumps(self.append_info))}
+            self.c_messages = append_message
+            self.append_log_index += 1
         else:
-            append_proof = []
+            pre_app_proof= []
             append_message = ""
+            commit_hash = ""
+        
+        self.broadcast(json.dumps([Messages.APPEND_ENTRY, pre_app_proof, commit_hash, append_message, append_proof]))
 
