@@ -13,11 +13,7 @@ class Messages(IntEnum):
     CATCHUP_RESP = 101
 
 
-class SigInfo(object):
-    def __init__(self, sig, node_num):
-        self.sig = sig
-        self.node_num = node_num
-
+SigInfo = namedtuple('SigInfo', ['sig', 'node_num'])
 
 class Node(object):
 
@@ -43,6 +39,7 @@ class Node(object):
         return (public_key.verify(data, sig_info.sig))
 
     def sign_message(self, data:str):
+        return SigInfo(key.sign(data, ''), self.node_num)
 
     def check_messages(self):
         """
@@ -50,6 +47,6 @@ class Node(object):
         """
 
         pass
-    
+
     def pre_append(self, pre_append_message):
         pass
