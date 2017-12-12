@@ -95,13 +95,13 @@ class Node(object):
         # Process append_proof
         # Check Append sigs included
         for proof in append_proofs:
-            if (self.append_info == None) || (!validate_sig(proof, self.append_info)):
+            if (self.append_info == None) || (!validate_sig(proof, json.dumps(self.append_info))):
                 return
 
         # Process PreAppend info
         # Check PreAppend sigs included
         for proof in pre_append_proofs:
-            if !validate_sig(proof, self.pre_append_info):
+            if !validate_sig(proof, json.dumps(self.pre_append_info)):
                 return
 
         # Check data hash sent in by PreAppend
