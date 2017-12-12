@@ -4,6 +4,7 @@ import logging
 
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP  # More secure RSA formulation
 from Crypto import Random
 
 import node 
@@ -24,7 +25,7 @@ def main():
     client_queue = queues[client_num]
 
     # start up the nodes
-    p = Process(target=leader.build_leader, args=(client_queue, public_keys, private_keys[0], 0, queues))
+    p = Process(target=leader.build_leader, args=(public_keys, private_keys[0], 0, queues))
     p.start()
 
     for i in range(1, num_nodes):

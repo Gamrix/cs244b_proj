@@ -2,6 +2,7 @@ from enum import IntEnum
 from collections import namedtuple
 import json
 import logging
+import base64
 
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
@@ -53,14 +54,23 @@ class Node(object):
 
     def validate_sig(self, sig_info: SigInfo, data:str):
         public_key = self.pub_keys[sig_info.node_num]
-        return (public_key.verify(data, sig_info.sig))
+        sig = base64.decodebytes(sig_info.sig)
+        return (public_key.verify(data.encode("utf-8"), sig))
 
     def sign_message(self, data:str):
-        return SigInfo(self.private_key.sign(data, ''), self.node_num)
+        sig_bytes = SigInfo(self.private_key.sign(data.encode("utf-8"), ''), self.node_num)
+        return base64.encodebytes(sig_bytes)
 
     def send_to_leader(self, message: str):
         logging.debug("Node {} sent to leader: {}".format(self.node_num, str))
         self.queues[self.cur_leader_num].put(message)
+
+    @staticmethod
+    def hash_obj(src_obj):
+        transactions_str = json.dumps(src_obj)
+        hash_bytes = SHA256.new(transactions_str.encode("utf-8")).digest()
+        return base64.encodebytes(hash_bytes)
+
 
     def check_messages(self):
         """
@@ -128,14 +138,13 @@ class Node(object):
                 logging.warning("Pre Append Proof {} is invalid".format(proof))
                 return
 
-        if SHA256.new(json.dumps(data)).digest() != self.pre_append_hash:
+        if self.hash_obj(data) != self.pre_append_hash:
             logging.warning("Transaction hash is invalid")
             return
 
         # TODO: Check that the append number is correct
 
-        commit_str = json.dumps(self.commits[-1])
-        commit_hash = SHA256.new(commit_str).digest()
+        commit_hash = self.hash_obj(self.commits[-1])
         if commit_hash != prev_commit_hash:
             logging.warning("Transactions out of order")
             return

@@ -1,9 +1,6 @@
 import json
 import logging
 
-from Crypto.Hash import SHA256
-from Crypto.PublicKey import RSA
-from Crypto import Random
 
 import node
 from node import Messages
@@ -36,8 +33,7 @@ class Leader(node.Node):
             # we are now safe to add a new message
             self.pre_append_log_index += 1
 
-            transactions_str = json.dumps(self.message_queue)
-            pre_app_hash = SHA256.new(transactions_str).digest()
+            pre_app_hash = self.hash_obj(self.message_queue)
 
             message = [Messages.PRE_APPEND, self.cur_leader_term, self.pre_append_log_index, pre_app_hash]
             self_sign = self.sign_message(json.dumps(message))
@@ -69,7 +65,7 @@ class Leader(node.Node):
     def process_app_ack(self, message):
         leader_msg =  json.dumps(self.append_info)
         if self.validate_sig(message[-1], leader_msg):
-            self.app_sigs.add(message[-1])
+            self.append_sigs.add(message[-1])
             self.check_send_append()
 
     def check_send_append(self):
@@ -99,8 +95,7 @@ class Leader(node.Node):
             append_message = self.append_message  # transactions for append phase,
             self.append_message = None
 
-            commit_str = json.dumps(self.commits[-1])
-            commit_hash = SHA256.new(commit_str).digest()
+            commit_hash = self.hash_obj(self.commits[-1])
             # now move the preappend data to the append phase
             # commit proof needs items the proof is signing: [APPEND_ENTRY,  term, log_number, d_hash, prev_commit_hash]
             self.append_info = [Messages.APPEND_ENTRY, *self.preappend_info[1:4], commit_hash]
