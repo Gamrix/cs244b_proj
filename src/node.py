@@ -27,6 +27,8 @@ class Node(object):
         self.cur_leader_term = 0
         self.cur_leader_num = 0
         self.pre_append_log_index = 0
+        self.pre_append_info = None
+        self.pre_append_hash = None
 
         self.append_log_index = 0
         self.append_info = None
@@ -41,6 +43,9 @@ class Node(object):
     def sign_message(self, data:str):
         return SigInfo(key.sign(data, ''), self.node_num)
 
+    def send_to_leader(self, message: str):
+        self.queues[self.cur_leader_num].put(message)
+
     def check_messages(self):
         """
         Process the next message and send message when needed
@@ -48,5 +53,28 @@ class Node(object):
 
         pass
 
+    # Follower: Handle PreAppendRequest message from leader
     def pre_append(self, pre_append_message):
-        pass
+        #[Messages.PRE_APPEND, self.cur_leader_term, self.pre_append_log_index, pre_app_hash, signature]
+        msg, term, log, hashval, sig = pre_append_message
+
+        # Check sig from leader
+        if validate_sig(sig, json.dumps(pre_append_message[:-1])):
+            # Update term
+            if self.cur_leader_term < term:
+                self.cur_leader_term = term
+
+            # Update log index
+            if self.pre_append_log_index < log:
+                self.pre_append_log_index = log
+
+            # Log pre_app_hash
+            self.pre_append_hash = hashval
+
+            # Generate, sign, and send ack
+            ack_message = [ Messages.PRE_APPEND_ACK ]
+            self_sign = self.sign_message(json.dumps(pre_append_message[:-1]))
+            ack_message.append(self_sign)
+
+            self.pre_append_info = pre_append_message
+            self.send_to_leader(json.dumps(ack_message))
