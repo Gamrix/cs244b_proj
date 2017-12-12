@@ -36,8 +36,7 @@ class Leader(node.Node):
             q = self.queues[i]
             q.put(message)
 
-    def send_new_message(self, message): # client_queue:Queue):
-        self.message_queue.append(message[1:])
+    def send_pre_append(self): # client_queue:Queue):
         if self.append_log_index == self.pre_append_log_index:
             # we are now safe to add a new message
             self.pre_append_log_index += 1
@@ -62,7 +61,8 @@ class Leader(node.Node):
             if message[0] == Messages.APPEND_ACK:
                 self.process_app_ack(message)
             if message[0] == Messages.CLIENT_MESSAGE:
-                self.send_new_message(message)
+                self.message_queue.append(message[1:])
+                self.send_pre_append()
 
 
     def process_pre_app_ack(self, message):
@@ -118,3 +118,4 @@ class Leader(node.Node):
             commit_hash = ""
 
         self.broadcast(json.dumps([Messages.APPEND_ENTRIES, pre_app_proof, commit_hash, append_message, append_proof]))
+        self.send_pre_append()

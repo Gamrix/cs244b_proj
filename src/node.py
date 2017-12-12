@@ -136,7 +136,9 @@ class Node(object):
                 if (self.append_info == None) or (not self.validate_sig(proof, json.dumps(self.append_info))):
                     logging.warning("Append Proof {} is invalid".format(proof))
                     return
-            self.apply_transactions(self.c_messages)
+
+            commit = [self.c_messages, append_proofs, self.append_info]
+            self.apply_transactions(commit)
 
         # Process PreAppend info
         # Check PreAppend sigs included
