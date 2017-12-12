@@ -54,9 +54,9 @@ def main():
         time.sleep(.1)
         while not client_queue.empty(): # reset the queue
             client_queue.get()
-        run_transactions(transactions[0], queues[0], quorum , client_num, client_queue, quiet=True)
+        run_transactions(transactions[:1], queues[0], quorum , client_num, client_queue, quiet=True)
 
-    for n in [6, 10, 50, 100, 500, 1000, 5000, 10000]:
+    for n in [6, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000]:
         time.sleep(.5)
         while not client_queue.empty(): # reset the queue
             client_queue.get()
