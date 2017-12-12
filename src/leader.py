@@ -26,8 +26,8 @@ class Leader(node.Node):
                 continue
             q.put(message)
 
-    def send_new_message(self, tx: dict):
-        self.message_queue.append(tx)
+    def send_new_message(self, tx: dict, client_queue:Queue):
+        self.message_queue.append([tx, client_queue])
         if self.append_log_index == self.pre_append_log_index:
             # we are now safe to add a new message
             self.pre_append_log_index += 1
@@ -40,10 +40,19 @@ class Leader(node.Node):
             message.append(self_sign)
             self.pre_app_sigs = {self_sign}
 
-            self.pre_append_info = message{:-1}
+            self.pre_append_info = message[:-1]
             self.append_message = self.message_queue
             self.message_queue = []
             self.broadcast(json.dumps(message))
+    
+    def check_messages(self):
+        while True:
+            message = json.loads(self.queues[self.node_num].pop())
+            if message[0] == Messages.PRE_APPEND_ACK:
+                self.process_pre_app_ack(message)
+            if message[0] == Messages.APPEND_ACK:
+                self.process_app_ack(message)
+
 
     def process_pre_app_ack(self, message):
         leader_msg =  json.dumps(self.pre_append_info[:-1])
