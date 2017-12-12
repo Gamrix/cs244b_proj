@@ -121,8 +121,8 @@ class Node(object):
 
     # Follower: Handle AppendEntriesRequest message from leader
     def append_entries(self, append_message):
-        #[Messages.APPEND_ENTRIES, pre_append_proof (list of sigs), data, prev_commit_hash, append_proof (list of sigs)]
-        _, pre_append_proofs, data, prev_commit_hash, append_proofs = append_message
+        #[Messages.APPEND_ENTRY, pre_app_proof :[sigs], prev_commit_hash, data, append_proof :[sigs]]
+        _, pre_append_proofs, prev_commit_hash, data, append_proofs = append_message
 
         # Process append_proof
         # Check Append sigs included
@@ -149,7 +149,11 @@ class Node(object):
             logging.warning("Transaction hash is invalid")
             return
 
-        # TODO: Check that the append number is correct
+        if self.append_log_index + 1 == self.pre_append_info[2]:
+            self.append_log_index += 1
+        else:
+            logging.warning("Append log index != PreAppend log index + 1")
+            return
 
         commit_hash = self.hash_obj(self.commits[-1])
         if commit_hash != prev_commit_hash:
