@@ -13,13 +13,18 @@ class Messages(IntEnum):
     CATCHUP_RESP = 101
 
 
+class SigInfo(object):
+    def __init__(self, sig, node_num):
+        self.sig = sig
+        self.node_num = node_num
+
 
 class Node(object):
 
-    def __init__(self, pub_sigs, private_sig, node_num, queues):
+    def __init__(self, pub_keys, private_key, node_num, queues):
         self.node_num = node_num
-        self.private_sig = private_sig
-        self.pub_sigs = pub_sigs
+        self.private_key = private_key
+        self.pub_keys = pub_keys
         self.queues = queues  # Queue is where the messages are simulated to be sent to
         self.kv_store = {}
 
@@ -29,6 +34,9 @@ class Node(object):
 
         self.append_log_index = 0
         self.append_info = None
+    
+    def validate_sig(self, sig_info: SigInfo, data:str):
+        pass
      
     def check_messages(self):
         """
