@@ -77,4 +77,3 @@ class Leader(node.Node):
             append_proof = []
             append_message = ""
 
-
