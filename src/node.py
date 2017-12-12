@@ -31,12 +31,12 @@ class Node(object):
         self.pre_append_hash = None
 
         # last seen index
-        self.pre_append_log_index = 0  
+        self.pre_append_log_index = 0
         self.append_log_index = 0
 
         self.append_info = None
         self.debug = False
-        
+
         self.commits = [""]  # begin with a dummy commit
 
         self.quorum = (len(pub_keys) - 1) // 3 * 2 + 1  # 2f + 1
@@ -61,7 +61,7 @@ class Node(object):
     # Follower: Handle PreAppendRequest message from leader
     def pre_append(self, pre_append_message):
         #[Messages.PRE_APPEND, self.cur_leader_term, self.pre_append_log_index, pre_app_hash, signature]
-        msg, term, log, hashval, sig = pre_append_message
+        _, term, log_index, hashval, sig = pre_append_message
 
         # Check sig from leader
         if validate_sig(sig, json.dumps(pre_append_message[:-1])):
@@ -70,8 +70,8 @@ class Node(object):
                 self.cur_leader_term = term
 
             # Update log index
-            if self.pre_append_log_index < log:
-                self.pre_append_log_index = log
+            if self.pre_append_log_index < log_index:
+                self.pre_append_log_index = log_index
 
             # Log pre_app_hash
             self.pre_append_hash = hashval
@@ -83,5 +83,3 @@ class Node(object):
 
             self.pre_append_info = pre_append_message
             self.send_to_leader(json.dumps(ack_message))
-
-
