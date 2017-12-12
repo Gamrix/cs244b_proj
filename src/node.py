@@ -64,26 +64,28 @@ class Node(object):
         _, term, log_index, hashval, sig = pre_append_message
 
         # Check sig from leader
-        if validate_sig(sig, json.dumps(pre_append_message[:-1])):
-            # Update term
-            if self.cur_leader_term < term:
-                self.cur_leader_term = term
+        if !validate_sig(sig, json.dumps(pre_append_message[:-1])):
+            return
 
-            # Update log index
-            if self.pre_append_log_index < log_index:
-                self.pre_append_log_index = log_index
+        # Update term
+        if self.cur_leader_term < term:
+            self.cur_leader_term = term
 
-            # Log pre_app_hash
-            self.pre_append_hash = hashval
+        # Update log index
+        if self.pre_append_log_index < log_index:
+            self.pre_append_log_index = log_index
 
-            # Record down pre_append_info
-            self.pre_append_info = pre_append_message[:-1]
+        # Log pre_app_hash
+        self.pre_append_hash = hashval
 
-            # Generate, sign, and send ack
-            ack_message = [ Messages.PRE_APPEND_ACK ]
-            self_sign = self.sign_message(json.dumps(pre_append_message[:-1]))
-            ack_message.append(self_sign)
-            self.send_to_leader(json.dumps(ack_message))
+        # Record down pre_append_info
+        self.pre_append_info = pre_append_message[:-1]
+
+        # Generate, sign, and send ack
+        ack_message = [ Messages.PRE_APPEND_ACK ]
+        self_sign = self.sign_message(json.dumps(pre_append_message[:-1]))
+        ack_message.append(self_sign)
+        self.send_to_leader(json.dumps(ack_message))
 
     # Follower: Handle AppendEntriesRequest message from leader
     def append_entries(self, append_message):
