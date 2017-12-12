@@ -112,8 +112,6 @@ class Node(object):
         if self.prev_commit_hash != prev_commit_hash
             return
 
-        # TODO apply data
-
         # Record down append_info
         self.append_info = [Messages.APPEND_ENTRIES, *self.preappend_info[1:4], prev_commit_hash]
 
