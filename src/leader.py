@@ -7,10 +7,7 @@ import os
 import node
 from node import Messages
 
-def build_leader(pub_keys, private_key, node_num, *args, **kwargs):
-    cur_time =  time.strftime("%m%d_%H%M")
-    os.makedirs("logs/{}/".format(cur_time))
-
+def build_leader(cur_time, pub_keys, private_key, node_num, *args, **kwargs):
     logging.basicConfig(filename="logs/{}/node{}.log".format(cur_time, node_num), level=logging.DEBUG)
     logging.info("Node is leader")
     node = Leader(pub_keys, private_key, node_num, *args, **kwargs)

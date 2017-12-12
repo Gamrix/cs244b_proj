@@ -23,8 +23,7 @@ class Messages(IntEnum):
 
 SigInfo = namedtuple('SigInfo', ['sig', 'node_num'])
 
-def build_node(pub_keys, private_key, node_num, *args, **kwargs):
-    cur_time =  time.strftime("%m%d_%H%M")
+def build_node(cur_time, pub_keys, private_key, node_num, *args, **kwargs):
     logging.basicConfig(filename="logs/{}/node{}.log".format(cur_time, node_num), level=logging.DEBUG)
     node = Node(pub_keys, private_key, node_num, *args, **kwargs)
     node.check_messages()
@@ -182,14 +181,14 @@ class Node(object):
         # apply the data
         transactions = commit[0]
         for m, c_num in transactions:
-            if "print" in m:
-                v = self.kv_store[m["print"]]
+            if "get" in m:
+                v = self.kv_store[m["get"]]
                 logging.info("Node {} replies {} to client".format(self.node_num, v))
 
             else:
                 v = ""
                 self.kv_store.update(m)
-            message = [Messages.RETURN_TO_CLIENT, v]
+            message = [Messages.RETURN_TO_CLIENT, v, self.hash_obj(m)]
             self_sign = self.sign_message(json.dumps(message))
             message.append(self_sign)
             self.queues[c_num].put(json.dumps(message))
