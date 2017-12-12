@@ -1,4 +1,5 @@
 from enum import IntEnum
+from collections import namedtuple
 import json
 
 class Messages(IntEnum):
@@ -117,7 +118,7 @@ class Node(object):
             return
 
         # Check previous commit hash
-        if self.prev_commit_hash != prev_commit_hash
+        if self.prev_commit_hash != prev_commit_hash:
             return
 
         # Record down append_info

@@ -26,11 +26,14 @@ def main():
     for i in range(1, num_nodes):
         p = Process(target=node.build_node, args=(public_keys,private_keys[i], i, queues))
     
-    queues[0].push(json.dumps([node.Messages.CLIENT_MESSAGE, {"test": "Hi John"}]))
-    queues[0].push(json.dumps([node.Messages.CLIENT_MESSAGE, {"print": "test"}]))
+    queues[0].put(json.dumps([node.Messages.CLIENT_MESSAGE, {"test": "Hi John"}]))
+    queues[0].put(json.dumps([node.Messages.CLIENT_MESSAGE, {"print": "test"}]))
 
     while True:
         print(json.loads(client_queue.get()))
+
+if __name__  == "__main__":
+    main()
     
 
 
